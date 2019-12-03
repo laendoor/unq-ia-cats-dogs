@@ -1,3 +1,4 @@
 train.zip
 train/*.jpg
 !train/.gitkeep
+.idea/
