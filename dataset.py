@@ -1,12 +1,13 @@
 import os
 import random
 import numpy as np
-import PIL.Image as Image
+from PIL import Image
+from scanf import scanf
 import torch.utils.data.dataset
 import matplotlib.pyplot as plt
 import torchvision.transforms as transforms
 
-dir_imagenes = 'train/sample'
+dir_images = 'train/sample'
 cant_archivos = 0
 
 
@@ -15,7 +16,7 @@ class CatDogDataset(torch.utils.data.Dataset):
         files = os.listdir(data_dir)
         files = [os.path.join(data_dir, x) for x in files]
         if data_size < 0 or data_size > len(files):
-            assert ("Data size should be between 0 to number of files in the dataset")
+            assert "Data size should be between 0 to number of files in the dataset"
         if data_size == 0:
             data_size = len(files)
         self.data_size = data_size
@@ -29,30 +30,32 @@ class CatDogDataset(torch.utils.data.Dataset):
         image = Image.open(image_address)
         width, height = image.size
 
-        if width < height:
-            image = transforms.Pad((height-width, 0), padding_mode='edge')(image)
-        else:
-            image = transforms.Pad((0, width-height), padding_mode='edge')(image)
-
+        padding_pair = (height - width, 0) if width < height else (0, width - height)
+        image = transforms.Pad(padding_pair, padding_mode='edge')(image)
         image = transforms.Resize((128, 128))(image)
 
         image = np.array(image)
         image = image / 255
         image = image.transpose(2, 0, 1)
-        image = torch.Tensor(image)
-        label = 0
-        return image, label
+        image = torch.tensor(image)
+        return image, self.label(image_address)
+
+    @staticmethod
+    def label(filename):
+        _, _, label, _ = scanf("%s/%s/%s.%d.jpg", filename)
+        return 0 if label == "cat" else 1  # Kaggle convention
 
 
 def mostrarImagen(dataset, nroImagen):
     imagen, etiqueta = dataset[nroImagen]
     imagen = imagen.numpy()
     imagen = imagen.transpose(1, 2, 0)
+    print(etiqueta)
     plt.imshow(imagen)
     plt.title(etiqueta)
     plt.show()
 
 
-catdog_dataset = CatDogDataset(data_dir=dir_imagenes, data_size=cant_archivos)
+catdog_dataset = CatDogDataset(data_dir=dir_images, data_size=cant_archivos)
 
 mostrarImagen(catdog_dataset, 2)
