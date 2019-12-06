@@ -9,6 +9,7 @@ from sklearn.preprocessing import LabelEncoder
 import torch.nn as nn
 import torchvision.transforms as transforms
 from torch.utils.data.sampler import SubsetRandomSampler
+from sklearn.metrics import confusion_matrix
 
 # Algunos parámetros:
 # dir_images: Directorio donde están las imágenes extraídas del 7zip de Kaggle
@@ -32,7 +33,7 @@ class Cifar10Dataset(torch.utils.data.Dataset):
         files = os.listdir(data_dir)
         files = [os.path.join(data_dir, x) for x in files]
         if data_size < 0 or data_size > len(files):
-            assert ("Data size should be between 0 to number of files in the dataset")
+            assert "Data size should be between 0 to number of files in the dataset"
         if data_size == 0:
             data_size = len(files)
         self.data_size = data_size
@@ -45,7 +46,7 @@ class Cifar10Dataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         image_address = self.files[idx]
         image = np.array(Image.open(image_address))
-        # Se deja los valores de la imágen en el rango 0-1
+        # Se deja los valores de la imagen en el rango 0-1
         image = image / 255
         # Se traspone la imagen para que el canal sea la primer coordenada
         # (la red espera NxMx3)
@@ -63,29 +64,30 @@ class Cifar10Dataset(torch.utils.data.Dataset):
 
 # Levantamos los labels del archivo csv
 labels = pd.read_csv(path_train_labels)
+
 # Lo transformamos a números con un labelEncoder
 # labels_encoder es importante: Es el que me va a permitir revertir la
 # transformación para conocer el nombre de una etiqueta numérica
 labels_encoder = LabelEncoder()
-labels_numeros = labels_encoder.fit_transform(labels['label'])
+labels_numbers = labels_encoder.fit_transform(labels['label'])
 
 # Generamos el DataSet con nuestros datos de entrenamiento
-cifar_dataset = Cifar10Dataset(data_dir=dir_images, data_size=cant_archivos, label_source=labels_numeros)
+cifar_dataset = Cifar10Dataset(data_dir=dir_images, data_size=cant_archivos, label_source=labels_numbers)
 
 
-##Antes de pasar a la separación en datos de training y test, podemos verificar
-##que estamos levantando las imágenes de manera correcta. Defino una función que
-##dado un número toma la imágen en esa posición del dataset (Ojo, recordar que
-##está mezclado), y grafica la imágen junto con su etiqueta.
+# Antes de pasar a la separación en datos de training y test, podemos verificar
+# que estamos levantando las imágenes de manera correcta. Defino una función que
+# dado un número toma la imagen en esa posición del dataset (Ojo, recordar que
+# está mezclado), y gráfica la imagen junto con su etiqueta.
 def mostrarImagen(dataset, nroImagen, encoder):
     imagen, etiqueta = dataset[nroImagen]
-    # Se regresa la imágen a formato numpy
-    # Es necesario trasponer la imágen para que funcione con imshow
+    # Se regresa la imagen a formato numpy
+    # Es necesario trasponer la imagen para que funcione con imshow
     # (imshow espera 3xNxM)
     imagen = imagen.numpy()
     imagen = imagen.transpose(1, 2, 0)
     plt.imshow(imagen)
-    # Recupero la etiqueta de la imágen usando el encoder
+    # Recupero la etiqueta de la imagen usando el encoder
     plt.title(labels_encoder.inverse_transform([etiqueta])[0])
 
 
@@ -126,7 +128,7 @@ class CifarNet(nn.Module):
         # Luego de conv2 se hace otro MaxPool, así que
         # Entrada: 10x10; Salida: 5x5
         # Finalmente llegamos a la red lineal, como teníamos 16 canales
-        # y una imágen de 5x5, la cantidad de entradas de la capa es
+        # y una imagen de 5x5, la cantidad de entradas de la capa es
         # 16x5x5.
         self.fc1 = nn.Linear(16 * 5 * 5, 120)
         self.fc2 = nn.Linear(120, 84)
@@ -198,7 +200,7 @@ def test(model, data_loader):
 
 
 # Definimos nuestro criterio de loss
-# Aquí usamos CrossEntropyLoss, que está poensado para clasificación
+# Aquí usamos CrossEntropyLoss, que está pensado para clasificación
 loss_criteria = nn.CrossEntropyLoss()
 
 # Definimos nuestro optimizer
@@ -229,15 +231,13 @@ for epoch in range(1, epochs + 1):
     validation_loss.append(test_loss)
 
     # Cada 10 iteraciones vamos imprimiendo nuestros resultados parciales
-    if (epoch) % 10 == 0:
+    if epoch % 10 == 0:
         print('Epoch {:d}: loss entrenamiento= {:.4f}, loss validacion= {:.4f}, exactitud={:.4%}'.format(epoch,
                                                                                                          train_loss,
                                                                                                          test_loss,
                                                                                                          accuracy))
 
 # Creamos la matriz de confusión, esta es parte del paquete scikit
-from sklearn.metrics import confusion_matrix
-
 # Ponemos el modelo en modo evaluación
 model.eval()
 
@@ -264,5 +264,5 @@ tick_marks = np.arange(10)
 plt.xticks(tick_marks, labels_encoder.inverse_transform(range(10)), rotation=45)
 plt.yticks(tick_marks, labels_encoder.inverse_transform(range(10)))
 plt.xlabel("El modelo predijo que era")
-plt.ylabel("La imágen real era")
+plt.ylabel("La imagen real era")
 plt.show()
