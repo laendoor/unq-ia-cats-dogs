@@ -3,4 +3,5 @@ train/*.jpg
 !train/.gitkeep
 .idea/
 __pycache__/**
+train/min/**
 train/sample/**

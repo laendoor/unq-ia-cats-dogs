@@ -4,11 +4,9 @@ import numpy as np
 from PIL import Image
 from scanf import scanf
 import torch.utils.data.dataset
-import matplotlib.pyplot as plt
 import torchvision.transforms as transforms
 
-dir_images = 'train/sample'
-cant_archivos = 0
+IMG_SIZE = 32
 
 
 class CatDogDataset(torch.utils.data.Dataset):
@@ -32,30 +30,15 @@ class CatDogDataset(torch.utils.data.Dataset):
 
         padding_pair = (height - width, 0) if width < height else (0, width - height)
         image = transforms.Pad(padding_pair, padding_mode='edge')(image)
-        image = transforms.Resize((128, 128))(image)
+        image = transforms.Resize((IMG_SIZE, IMG_SIZE))(image)
 
         image = np.array(image)
         image = image / 255
         image = image.transpose(2, 0, 1)
-        image = torch.tensor(image)
+        image = torch.Tensor(image)
         return image, self.label(image_address)
 
     @staticmethod
     def label(filename):
         _, _, label, _ = scanf("%s/%s/%s.%d.jpg", filename)
         return 0 if label == "cat" else 1  # Kaggle convention
-
-
-def mostrarImagen(dataset, nroImagen):
-    imagen, etiqueta = dataset[nroImagen]
-    imagen = imagen.numpy()
-    imagen = imagen.transpose(1, 2, 0)
-    print(etiqueta)
-    plt.imshow(imagen)
-    plt.title(etiqueta)
-    plt.show()
-
-
-catdog_dataset = CatDogDataset(data_dir=dir_images, data_size=cant_archivos)
-
-mostrarImagen(catdog_dataset, 2)
