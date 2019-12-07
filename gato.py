@@ -4,15 +4,15 @@ import matplotlib.pyplot as plt
 import torch.utils.data.dataset
 from catnet import CatNet
 from dataset import CatDogDataset
-from train_test import train, test, print_data
-from sklearn.metrics import confusion_matrix
+from train_test import train, test, print_data, dataloader
+from sklearn.metrics import confusion_matrix, accuracy_score
 
 batch_size = 84             # cantidad de archivos entran por batch de entrenamiento
 test_proportion = .2        # proporción de archivos a usar de test (ej: 20%)
 validation_proportion = .1  # proporción de archivos a usar de test (ej: 10%)
 img_path = 'train/min'      # path de las imágenes FIXME: uso min para que no sea tan pesado, cambiar a train/
 
-# Creamos los Datasets y los loaders para el entrenamiento
+# Datasets
 catdog_dataset = CatDogDataset(data_dir=img_path)
 len_dataset = len(catdog_dataset)
 
@@ -22,8 +22,11 @@ train_size = len_dataset - test_size - validation_size
 
 train_dataset, test_dataset, validation_dataset = torch.utils.data.random_split(
     catdog_dataset, [train_size, test_size, validation_size])
-train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=False, num_workers=0)
-test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=0)
+
+# Loaders
+train_loader = dataloader(train_dataset, batch_size)
+test_loader = dataloader(test_dataset, batch_size)
+validation_loader = dataloader(validation_dataset, batch_size)
 
 # Creamos el modelo
 model = CatNet()
@@ -60,30 +63,32 @@ for epoch in range(1, epochs + 1):
         print_data(epoch, train_loss, test_loss, accuracy)
 
 
-# Creamos la matriz de confusión, esta es parte del paquete scikit
 # Ponemos el modelo en modo evaluación
 model.eval()
 
-# Hacemos las predicciones para los datos de test
-# Para eso, en primer lugar generamos la matriz de entradas y vector de
-# resultados a partir del dataloader
-entradas = list()
-salidas = list()
-for batch, tensor in enumerate(test_loader):
-    valor, salida = tensor
-    entradas.append(valor)
-    salidas.append(salida)
-# Se pasan a formato Tensor
-entradas = torch.cat(entradas)
-salidas = torch.cat(salidas)
-# Se obtienen las predicciones
-_, predicted = torch.max(model(entradas), 1)
+# Predicciones para los datos de validación
+# Primero generamos la matriz de entradas y vector de resultados a partir del dataloader
+validation_inputs = list()
+validation_real = list()
+for batch, tensor in enumerate(validation_loader):
+    value, output = tensor
+    validation_inputs.append(value)
+    validation_real.append(output)
+inputs = torch.cat(validation_inputs)                 # Se pasan a formato Tensor
+validation_real = torch.cat(validation_real)
+_, validation_predicted = torch.max(model(inputs), 1)  # Se obtienen las predicciones
 
+
+# Armamos la matriz de confusión
+cm = confusion_matrix(validation_real.numpy(), validation_predicted.numpy())
+
+# Prints para chequear data
+print("real:      ", validation_real.numpy())
+print("predicted: ", validation_predicted.numpy())
+print(cm)
 
 # Graficamos la matriz de confusión
-tick_marks = [0, 1]
-labels = ['Gato', 'Perro']
-cm = confusion_matrix(salidas.numpy(), predicted.numpy())
+tick_marks, labels = [0, 1], ['Gato', 'Perro']
 plt.imshow(cm, interpolation="nearest", cmap=plt.cm.Blues)
 plt.colorbar()
 plt.xticks(tick_marks, labels, rotation=45)
@@ -91,6 +96,10 @@ plt.yticks(tick_marks, labels)
 plt.xlabel("El modelo predijo que era")
 plt.ylabel("La imagen real era")
 plt.show()
+
+# Evaluamos Accuracy
+accuracy = accuracy_score(validation_real, validation_predicted.numpy())
+print(f'EPOCHS: {epochs} - ACCURACY: {accuracy}')
 
 
 # TODO: se debe proveer: Accuracy, Precision, Recall y F1

@@ -49,6 +49,10 @@ def test(model, data_loader, loss_criteria):
     return avg_loss, avg_accuracy
 
 
+def dataloader(dataset, batch_size):
+    return torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=0)
+
+
 def print_data(epoch, train_loss, test_loss, accuracy):
     print('Epoch {:d}: loss entrenamiento={:.4f}, loss validación={:.4f}, exactitud={:.4%}'
           .format(epoch, train_loss, test_loss, accuracy))
