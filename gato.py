@@ -5,7 +5,7 @@ import torch.utils.data.dataset
 from catnet import CatNet
 from dataset import CatDogDataset
 from train_test import train, test, print_data, dataloader
-from sklearn.metrics import confusion_matrix, accuracy_score
+import sklearn.metrics as skm
 
 batch_size = 84             # cantidad de archivos entran por batch de entrenamiento
 test_proportion = .2        # proporción de archivos a usar de test (ej: 20%)
@@ -36,19 +36,16 @@ input('Ya estoy listo. Enter para entrenar...')
 loss_criteria = nn.CrossEntropyLoss()  # criterio de loss: CrossEntropyLoss está pensado para clasificación
 
 
-# optimizer: Stochastic Gradient Descent (SGD) - Descenso por Gradiente Estocástico
+# Optimizer: Stochastic Gradient Descent (SGD) - Descenso por Gradiente Estocástico
 learning_rate = 0.01
 learning_momentum = 0.9
 optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate, momentum=learning_momentum)
 
-# listas vacías para ir guardando loss y validación en cada iteración
+# Entrenamiento
+epochs = 100
 epoch_nums = []
 training_loss = []
 validation_loss = []
-
-
-# Entrenamiento
-epochs = 100
 for epoch in range(1, epochs + 1):
     train_loss = train(model, train_loader, optimizer, loss_criteria)   # train
     test_loss, accuracy = test(model, test_loader, loss_criteria)       # test
@@ -80,7 +77,7 @@ _, validation_predicted = torch.max(model(inputs), 1)  # Se obtienen las predicc
 
 
 # Armamos la matriz de confusión
-cm = confusion_matrix(validation_real.numpy(), validation_predicted.numpy())
+cm = skm.confusion_matrix(validation_real.numpy(), validation_predicted.numpy())
 
 # Prints para chequear data
 print("real:      ", validation_real.numpy())
@@ -98,8 +95,15 @@ plt.ylabel("La imagen real era")
 plt.show()
 
 # Evaluamos Accuracy
-accuracy = accuracy_score(validation_real, validation_predicted.numpy())
-print(f'EPOCHS: {epochs} - ACCURACY: {accuracy}')
+accuracy = skm.accuracy_score(validation_real.numpy(), validation_predicted.numpy())
+precision = skm.precision_score(validation_real.numpy(), validation_predicted.numpy())
+recall = skm.recall_score(validation_real.numpy(), validation_predicted.numpy())
+f1 = skm.f1_score(validation_real.numpy(), validation_predicted.numpy())
 
+# Resultados
+print('Epochs: {:d}'.format(epochs))
+print('Accuracy: {:.4f}'.format(accuracy))
+print('Precision: {:.4f}'.format(precision))
+print('Recall: {:.4f}'.format(recall))
+print('F1: {:.4f}'.format(f1))
 
-# TODO: se debe proveer: Accuracy, Precision, Recall y F1
