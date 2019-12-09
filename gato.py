@@ -1,4 +1,3 @@
-import numpy as np
 import torch.nn as nn
 import matplotlib.pyplot as plt
 import torch.utils.data.dataset
@@ -7,13 +6,18 @@ from dataset import CatDogDataset
 from train_test import train, test, print_data, dataloader
 import sklearn.metrics as skm
 
+
+# Configuración
+epochs = 100                # cantidad de épocas (iteraciones)
 batch_size = 84             # cantidad de archivos entran por batch de entrenamiento
 test_proportion = .2        # proporción de archivos a usar de test (ej: 20%)
 validation_proportion = .1  # proporción de archivos a usar de test (ej: 10%)
-img_path = 'train/min'      # path de las imágenes FIXME: uso min para que no sea tan pesado, cambiar a train/
+img_size = 32               # tamaño de resize para aplicarle al dataset (ej: 32x32 px)
+img_path = 'train'      # path de las imágenes FIXME: uso min para que no sea tan pesado, cambiar a train/
+
 
 # Datasets
-catdog_dataset = CatDogDataset(data_dir=img_path)
+catdog_dataset = CatDogDataset(data_dir=img_path, img_size=img_size)
 len_dataset = len(catdog_dataset)
 
 test_size = int(test_proportion * len_dataset)
@@ -23,16 +27,26 @@ train_size = len_dataset - test_size - validation_size
 train_dataset, test_dataset, validation_dataset = torch.utils.data.random_split(
     catdog_dataset, [train_size, test_size, validation_size])
 
+
+print("--- Configuración inicial ---")
+print('Epochs     : {:d}'.format(epochs))
+print('Batch Size : {:d}'.format(batch_size))
+print('Dataset    : {:d}'.format(len_dataset))
+print('Train      : {:.0f}% ({:d})'.format((1 - test_proportion - validation_proportion)*100, train_size))
+print('Test       : {:.0f}% ({:d})'.format(test_proportion*100, test_size))
+print('Validation : {:.0f}% ({:d})'.format(validation_proportion*100, validation_size))
+print('Img size   : {:d}'.format(img_size))
+print('Img path   : {:s}'.format(img_path))
+
+
 # Loaders
 train_loader = dataloader(train_dataset, batch_size)
 test_loader = dataloader(test_dataset, batch_size)
 validation_loader = dataloader(validation_dataset, batch_size)
 
+
 # Creamos el modelo
 model = CatNet()
-
-input('Ya estoy listo. Enter para entrenar...')
-
 loss_criteria = nn.CrossEntropyLoss()  # criterio de loss: CrossEntropyLoss está pensado para clasificación
 
 
@@ -41,11 +55,13 @@ learning_rate = 0.01
 learning_momentum = 0.9
 optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate, momentum=learning_momentum)
 
+
 # Entrenamiento
-epochs = 100
 epoch_nums = []
 training_loss = []
 validation_loss = []
+show_every = round(epochs * .1)
+print("\n--- Entrenamiento ---")
 for epoch in range(1, epochs + 1):
     train_loss = train(model, train_loader, optimizer, loss_criteria)   # train
     test_loss, accuracy = test(model, test_loader, loss_criteria)       # test
@@ -56,12 +72,13 @@ for epoch in range(1, epochs + 1):
     validation_loss.append(test_loss)
 
     # Cada 10 iteraciones vamos imprimiendo nuestros resultados parciales
-    if epoch % 10 == 0:
-        print_data(epoch, train_loss, test_loss, accuracy)
+    if epoch % show_every == 0:
+        print_data(int(epoch / show_every * 10), epoch, train_loss, test_loss, accuracy)
 
 
 # Ponemos el modelo en modo evaluación
 model.eval()
+
 
 # Predicciones para los datos de validación
 # Primero generamos la matriz de entradas y vector de resultados a partir del dataloader
@@ -79,31 +96,29 @@ _, validation_predicted = torch.max(model(inputs), 1)  # Se obtienen las predicc
 # Armamos la matriz de confusión
 cm = skm.confusion_matrix(validation_real.numpy(), validation_predicted.numpy())
 
-# Prints para chequear data
-print("real:      ", validation_real.numpy())
-print("predicted: ", validation_predicted.numpy())
-print(cm)
 
 # Graficamos la matriz de confusión
-tick_marks, labels = [0, 1], ['Gato', 'Perro']
-plt.imshow(cm, interpolation="nearest", cmap=plt.cm.Blues)
-plt.colorbar()
-plt.xticks(tick_marks, labels, rotation=45)
-plt.yticks(tick_marks, labels)
-plt.xlabel("El modelo predijo que era")
-plt.ylabel("La imagen real era")
-plt.show()
+# tick_marks, labels = [0, 1], ['Gato', 'Perro']
+# plt.imshow(cm, interpolation="nearest", cmap=plt.cm.Blues)
+# plt.colorbar()
+# plt.xticks(tick_marks, labels, rotation=45)
+# plt.yticks(tick_marks, labels)
+# plt.xlabel("El modelo predijo que era")
+# plt.ylabel("La imagen real era")
+# plt.show()
 
-# Evaluamos Accuracy
+
+# Evaluamos
 accuracy = skm.accuracy_score(validation_real.numpy(), validation_predicted.numpy())
 precision = skm.precision_score(validation_real.numpy(), validation_predicted.numpy())
 recall = skm.recall_score(validation_real.numpy(), validation_predicted.numpy())
 f1 = skm.f1_score(validation_real.numpy(), validation_predicted.numpy())
 
 # Resultados
-print('Epochs: {:d}'.format(epochs))
-print('Accuracy: {:.4f}'.format(accuracy))
-print('Precision: {:.4f}'.format(precision))
-print('Recall: {:.4f}'.format(recall))
-print('F1: {:.4f}'.format(f1))
+print("\n--- Resultados ---")
+print('Accuracy  : {:.4f}'.format(accuracy))
+print('Precision : {:.4f}'.format(precision))
+print('Recall    : {:.4f}'.format(recall))
+print('F1        : {:.4f}'.format(f1))
+print('Matriz de confusión\n', cm)
 

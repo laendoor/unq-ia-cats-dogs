@@ -1,7 +1,5 @@
 train.zip
-train/*.jpg
+train*/**
 !train/.gitkeep
 .idea/
 __pycache__/**
-train/min/**
-train/sample/**
