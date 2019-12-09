@@ -8,7 +8,7 @@ import torchvision.transforms as transforms
 
 
 class CatDogDataset(torch.utils.data.Dataset):
-    def __init__(self, data_dir, data_size=0, img_size=32):
+    def __init__(self, data_dir, data_size=0, img_size=32, padding_mode='edge'):
         files = os.listdir(data_dir)
         files = [os.path.join(data_dir, x) for x in files if '.gitkeep' not in x]
 
@@ -16,6 +16,7 @@ class CatDogDataset(torch.utils.data.Dataset):
             assert "Data size should be between 0 to number of files in the dataset"
 
         self.img_size = img_size
+        self.padding_mode = padding_mode
         self.data_size = len(files) if data_size == 0 else data_size
         self.files = random.sample(files, self.data_size)
 
@@ -28,7 +29,7 @@ class CatDogDataset(torch.utils.data.Dataset):
         width, height = image.size
 
         padding_pair = (height - width, 0) if width < height else (0, width - height)
-        image = transforms.Pad(padding_pair, padding_mode='edge')(image)
+        image = transforms.Pad(padding_pair, padding_mode=self.padding_mode)(image)
         image = transforms.Resize((self.img_size, self.img_size))(image)
 
         image = np.array(image)
