@@ -1,5 +1,7 @@
 train.zip
+test.zip
 train*/**
+test*/**
 !train/.gitkeep
 .idea/
 __pycache__/**
