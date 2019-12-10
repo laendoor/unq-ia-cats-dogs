@@ -8,27 +8,18 @@ from catnet import CatNet
 from dataset import CatDogDataset
 from train_test import train, test, print_data, dataloader
 
-# def predict_image(image):
-#     image_tensor = test_transforms(image).float()
-#     image_tensor = image_tensor.unsqueeze_(0)
-#     input = Variable(image_tensor)
-#     input = input.to(device)
-#     output = model(input)
-#     index = output.data.cpu().numpy().argmax()
-#     return index
-
 
 epochs = 300
-dataset_path = 'test_10'
+dataset_path = 'test'
 img_size = 32
 padding_mode = 'edge'
 batch_size = 84
-FILENAME_MODEL = 'gato_{:d}.pt'.format(epochs)
+FILENAME_MODEL = 'gato_300.pt'
 catdog_dataset = CatDogDataset(data_dir=dataset_path, img_size=img_size, padding_mode=padding_mode, label_mode='eval')
 
 validation_size = len(catdog_dataset)
-validation_dataset = torch.utils.data.random_split(catdog_dataset, [validation_size])
-validation_loader = dataloader(validation_dataset[0], batch_size)
+# validation_dataset = torch.utils.data.random_split(catdog_dataset, [validation_size])
+validation_loader = dataloader(catdog_dataset, batch_size)
 
 # Loading model
 model = CatNet()
@@ -46,15 +37,15 @@ for batch, tensor in enumerate(validation_loader):
 
 inputs = torch.cat(validation_inputs)  # Se pasan a formato Tensor
 validation_real = torch.cat(validation_real)
-# _, validation_predicted = torch.max(model(inputs), 1)  # Se obtienen las predicciones
-validation_predicted = torch.sigmoid(torch.mean(model(inputs), 1))   # Se obtienen las predicciones
+validation_predicted = torch.softmax(model(inputs), 1)[1]   # Se obtienen las predicciones
 
 print("validation real: ", validation_real)
-print("validation inputs: ", validation_predicted)
+# print("validation inputs: ", validation_predicted)
 
 # Genero el archivo con los resultados
 with open('submission.csv', mode='w') as file:
     writer = csv.writer(file)
     writer.writerow(['id', 'label'])
     for idx, p in enumerate(validation_predicted.detach().numpy()):
-        writer.writerow([validation_real.numpy()[idx], p])
+        print(validation_real.numpy()[idx], "{:.4f}".format(p))
+        writer.writerow([validation_real.numpy()[idx], "{:.4f}".format(p)])
