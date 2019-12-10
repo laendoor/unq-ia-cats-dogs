@@ -55,6 +55,6 @@ print("validation inputs: ", validation_predicted)
 # Genero el archivo con los resultados
 with open('submission.csv', mode='w') as file:
     writer = csv.writer(file)
-    writer.writerow(['id', 'valor'])
+    writer.writerow(['id', 'label'])
     for idx, p in enumerate(validation_predicted.detach().numpy()):
         writer.writerow([validation_real.numpy()[idx], p])
