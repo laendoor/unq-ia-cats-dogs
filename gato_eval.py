@@ -1,3 +1,4 @@
+import csv
 import argparse
 import torch.nn as nn
 import matplotlib.pyplot as plt
@@ -50,12 +51,10 @@ validation_predicted = torch.sigmoid(torch.mean(model(inputs), 1))   # Se obtien
 
 print("validation real: ", validation_real)
 print("validation inputs: ", validation_predicted)
-#
-# import csv
-#
-# with open('submission.csv', mode='w') as file:
-#     writer = csv.writer(file, delimiter='')
-#     writer.writerow(['id', 'valor'])
 
-for p in validation_predicted.detach().numpy():
-    print("{:.2f}".format(p))
+# Genero el archivo con los resultados
+with open('submission.csv', mode='w') as file:
+	writer = csv.writer(file)
+	writer.writerow(['id', 'valor'])
+	for idx, p in enumerate(validation_predicted.detach().numpy()):
+		writer.writerow([idx, p])
