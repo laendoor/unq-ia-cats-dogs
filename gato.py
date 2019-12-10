@@ -22,6 +22,8 @@ validation_proportion = .1       # proporción de archivos a usar de test (ej: 1
 img_size = 32                    # tamaño de resize para aplicarle al dataset (ej: 32x32 px)
 padding_mode = args.padding      # tipo de padding para generar imágenes cuadradas
 dataset_path = args.path         # path de las imágenes
+FILENAME_MODEL = 'gato_{:d}.pt'.format(epochs)
+FILENAME_MODEL2 = 'gato_{:d}_model.pt'.format(epochs)
 
 # Datasets
 catdog_dataset = CatDogDataset(data_dir=dataset_path, img_size=img_size, padding_mode=padding_mode)
@@ -78,6 +80,10 @@ for epoch in range(1, epochs + 1):
     # Cada 10 iteraciones vamos imprimiendo nuestros resultados parciales
     if epoch % show_every == 0:
         print_data(round(epoch / epochs * 100), epoch, train_loss, test_loss, accuracy)
+
+# Saving the model
+torch.save(model.state_dict(), FILENAME_MODEL)
+torch.save(model, FILENAME_MODEL2)
 
 # Ponemos el modelo en modo evaluación
 model.eval()

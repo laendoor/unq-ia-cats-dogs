@@ -8,7 +8,7 @@ import torchvision.transforms as transforms
 
 
 class CatDogDataset(torch.utils.data.Dataset):
-    def __init__(self, data_dir, data_size=0, img_size=32, padding_mode='edge'):
+    def __init__(self, data_dir, data_size=0, img_size=32, padding_mode='edge', label_mode='training'):
         files = os.listdir(data_dir)
         files = [os.path.join(data_dir, x) for x in files if '.gitkeep' not in x]
 
@@ -16,6 +16,7 @@ class CatDogDataset(torch.utils.data.Dataset):
             assert "Data size should be between 0 to number of files in the dataset"
 
         self.img_size = img_size
+        self.label_mode = label_mode
         self.padding_mode = padding_mode
         self.data_size = len(files) if data_size == 0 else data_size
         self.files = random.sample(files, self.data_size)
@@ -38,7 +39,10 @@ class CatDogDataset(torch.utils.data.Dataset):
         image = torch.Tensor(image)
         return image, self.label(image_address)
 
-    @staticmethod
-    def label(filename):
-        _, label, _ = scanf("%s/%s.%d.jpg", filename)
-        return 0 if label == "cat" else 1  # Kaggle convention
+    def label(self, filename):
+        if self.label_mode == 'training':
+            _, label, _ = scanf("%s/%s.%d.jpg", filename)
+            return 0 if label == "cat" else 1  # Kaggle convention
+
+        _, label = scanf("%s/%d.jpg", filename)
+        return label
